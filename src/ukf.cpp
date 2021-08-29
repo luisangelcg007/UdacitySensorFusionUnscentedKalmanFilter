@@ -232,14 +232,14 @@ void UKF::Prediction(double delta_t) {
 
   // predict state mean
   //x.fill(0.0);
-  for (int i = 0; i < 2 * n_aug + 1; ++i) 
+  for (int i = 0; i < 2 * n_aug_ + 1; ++i) 
   {  // iterate over sigma points
     x_ = x_ + weights_(i) * Xsig_pred_.col(i);
   }
 
   // predict state covariance matrix
   //P.fill(0.0);
-  for (int i = 0; i < 2 * n_aug + 1; ++i) 
+  for (int i = 0; i < 2 * n_aug_ + 1; ++i) 
   {  // iterate over sigma points
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x_;
@@ -314,7 +314,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   MatrixXd R = MatrixXd(n_z,n_z);
 
   // transform sigma points into measurement space
-  for (int i = 0; i < 2 * n_aug + 1; ++i) // 2n+1 simga points
+  for (int i = 0; i < 2 * n_aug_ + 1; ++i) // 2n+1 simga points
   {  
     // extract values for better readability
     double p_x = Xsig_pred_(0,i);
@@ -333,19 +333,19 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   // mean predicted measurement
   z_pred.fill(0.0);
-  for (int i=0; i < 2*n_aug+1; ++i) 
+  for (int i=0; i < 2*n_aug_+1; ++i) 
   {
-    z_pred = z_pred + weights(i) * Zsig.col(i);
+    z_pred = z_pred + weights_(i) * Zsig.col(i);
   }
 
   // innovation covariance matrix S
   S.fill(0.0);
-  for (int i = 0; i < 2 * n_aug + 1; ++i) // 2n+1 simga points
+  for (int i = 0; i < 2 * n_aug_ + 1; ++i) // 2n+1 simga points
   {  
     // residual
     VectorXd z_diff = Zsig.col(i) - z_pred;
 
-    S = S + weights(i) * z_diff * z_diff.transpose();
+    S = S + weights_(i) * z_diff * z_diff.transpose();
   }
 
   // add measurement noise covariance matrix
@@ -367,7 +367,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x;
 
-    Tc = Tc + weights(i) * x_diff * z_diff.transpose();
+    Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
   }
 
   // calculate Kalman gain K;
@@ -379,7 +379,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   // update state mean and covariance matrix
   x_ = x_ + K * z_diff;
-  P = P - K * S * K.transpose();
+  P_ = P_ - K * S * K.transpose();
 
   // Calculate NIS for Radar
   NIS_radar_ = z_diff.transpose() * S.inverse() * z_diff;
