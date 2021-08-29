@@ -97,8 +97,8 @@ class UKF {
   double lambda_;
 
   // Normalised Innovation Squared for each measurement
-  double NIS_lidar_;
-  double NIS_radar_;
+  double nisLidar_;
+  double nisRadar_;
 };
 
 #endif  // UKF_H
