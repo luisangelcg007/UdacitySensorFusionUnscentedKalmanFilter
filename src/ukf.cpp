@@ -21,10 +21,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 2.0;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 1.0;
   
   /**
    * DO NOT MODIFY measurement noise values below.
@@ -129,6 +129,71 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   }
 }
 
+// void UKF::Prediction(double delta_t) {
+//     /**
+//    * TODO: Complete this function! Estimate the object's location. 
+//    * Modify the state vector, x_. Predict sigma points, the state, 
+//    * and the state covariance matrix.
+//    */
+
+//   // Step #1 - Create augmented mean vector, augmented state covariance
+//   VectorXd x_aug = VectorXd(n_aug_);
+//   x_aug.setZero(n_aug_);
+//   x_aug.head(5) = x_;
+
+//   MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
+//   P_aug.setZero(n_aug_, n_aug_);
+//   P_aug.topLeftCorner(5, 5) = P_;
+//   P_aug.bottomRightCorner(2, 2) << std_a_ * std_a_, 0, 0,
+//       std_yawdd_ * std_yawdd_;
+
+//   // Step #2 - Create square root matrix
+//   MatrixXd A = P_aug.llt().matrixL();
+
+//   // Step #3 - Create augmented sigma points
+//   MatrixXd Xsig_aug = MatrixXd(n_aug_, 2 * n_aug_ + 1);
+//   Xsig_aug.col(0) = x_aug;
+//   Xsig_aug.middleCols(1, n_aug_) =
+//       (std::sqrt(lambda_ + n_aug_) * A.array()).colwise() + x_aug.array();
+//   Xsig_aug.middleCols(n_aug_ + 1, n_aug_) =
+//       (-std::sqrt(lambda_ + n_aug_) * A.array()).colwise() + x_aug.array();
+
+//   // Step #4 - Predict sigma points
+//   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+//   for (int i = 0; i < Xsig_aug.cols(); i++) {
+//     const float px = Xsig_aug(0, i);
+//     const float py = Xsig_aug(1, i);
+//     const float v = Xsig_aug(2, i);
+//     const float yaw = Xsig_aug(3, i);
+//     const float yaw_rate = Xsig_aug(4, i);
+//     const float nu_accel = Xsig_aug(5, i);
+//     const float nu_yaw_accel = Xsig_aug(6, i);
+//     VectorXd vec(n_x_);
+//     VectorXd noise_vec(n_x_);
+//     noise_vec << 0.5 * delta_t * delta_t * std::cos(yaw) * nu_accel,
+//         0.5 * delta_t * delta_t * std::sin(yaw) * nu_accel, delta_t * nu_accel,
+//         0.5 * delta_t * delta_t * nu_yaw_accel, delta_t * nu_yaw_accel;
+//     // avoid division by zero
+//     if (std::abs(yaw_rate) <= 1e-10) {
+//       vec << v * std::cos(yaw) * delta_t, v * std::sin(yaw) * delta_t, 0, 0, 0;
+//     } else {
+//       vec << (v / yaw_rate) *
+//                  (std::sin(yaw + yaw_rate * delta_t) - std::sin(yaw)),
+//           (v / yaw_rate) *
+//               (-std::cos(yaw + yaw_rate * delta_t) + std::cos(yaw)),
+//           0, yaw_rate * delta_t, 0;
+//     }
+//     // write predicted sigma points into right column
+//     Xsig_pred_.col(i) = Xsig_aug.col(i).head(n_x_) + vec + noise_vec;
+//   }
+
+//   // Step #5 - Now predict state mean and covariance
+//   x_ = Xsig_pred_ * weights_;
+
+//   P_ = (Xsig_pred_.array().colwise() - x_.array());
+//   P_ = P_ * weights_.asDiagonal() * P_.transpose();
+// }
+
 void UKF::Prediction(double delta_t) {
   /**
    * TODO: Complete this function! Estimate the object's location. 
@@ -206,7 +271,7 @@ void UKF::Prediction(double delta_t) {
     nu_yaw_accel = Xsig_aug(6, i);
                  
     // avoid division by zero                          
-    if ( std::abs( yaw_rate ) <= 0.001 ) 
+    if ( std::abs( yaw_rate ) <= 1e-10 ) 
     {
       vec << v * std::cos(yaw) * delta_t, v * std::sin(yaw) * delta_t, 0, 0, 0;
     } 
@@ -232,10 +297,11 @@ void UKF::Prediction(double delta_t) {
 
   // predict state mean
   //x.fill(0.0);
-  for (int i = 0; i < 2 * n_aug_ + 1; ++i) 
-  {  // iterate over sigma points
-    x_ = x_ + weights_(i) * Xsig_pred_.col(i);
-  }
+  // for (int i = 0; i < 2 * n_aug_ + 1; ++i) 
+  // {  // iterate over sigma points
+  //   x_ = weights_(i) * Xsig_pred_.col(i);
+  // }
+  x_ = weights_ * Xsig_pred_;
 
   // predict state covariance matrix
   //P.fill(0.0);
@@ -246,6 +312,11 @@ void UKF::Prediction(double delta_t) {
 
     P_ = P_ + weights_(i) * x_diff * x_diff.transpose() ;
   }
+    // Step #5 - Now predict state mean and covariance
+  // x_ = Xsig_pred_ * weights_;
+
+  // P_ = (Xsig_pred_.array().colwise() - x_.array());
+  // P_ = P_ * weights_.asDiagonal() * P_.transpose();
 }
 
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
