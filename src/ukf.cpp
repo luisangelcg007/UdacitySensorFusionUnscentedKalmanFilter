@@ -349,9 +349,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   }
 
   // add measurement noise covariance matrix
-  R <<  std_radr*std_radr, 0, 0,
+  R <<  std_radr_*std_radr_, 0, 0,
         0, std_radphi*std_radphi, 0,
-        0, 0,std_radrd*std_radrd;
+        0, 0,std_radrd_*std_radrd_;
   S = S + R;
 
   // create matrix for cross correlation Tc
@@ -365,7 +365,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     VectorXd z_diff = Zsig.col(i) - z_pred;
 
     // state difference
-    VectorXd x_diff = Xsig_pred_.col(i) - x;
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
 
     Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
   }
